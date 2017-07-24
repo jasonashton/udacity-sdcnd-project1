@@ -1,53 +1,35 @@
 # **Finding Lane Lines on the Road** 
 [![Udacity - Self-Driving Car NanoDegree](https://s3.amazonaws.com/udacity-sdc/github/shield-carnd.svg)](http://www.udacity.com/drive)
 
-<img src="examples/laneLines_thirdPass.jpg" width="480" alt="Combined Image" />
+[//]: # (Image References)
 
-Overview
 ---
 
-When we drive, we use our eyes to decide where to go.  The lines on the road that show us where the lanes are act as our constant reference for where to steer the vehicle.  Naturally, one of the first things we would like to do in developing a self-driving car is to automatically detect lane lines using an algorithm.
+## Reflection
 
-In this project you will detect lane lines in images using Python and OpenCV.  OpenCV means "Open-Source Computer Vision", which is a package that has many useful tools for analyzing images.  
+![](final.gif)
 
-To complete the project, two files will be submitted: a file containing project code and a file containing a brief write up explaining your solution. We have included template files to be used both for the [code](https://github.com/udacity/CarND-LaneLines-P1/blob/master/P1.ipynb) and the [writeup](https://github.com/udacity/CarND-LaneLines-P1/blob/master/writeup_template.md).The code file is called P1.ipynb and the writeup template is writeup_template.md 
+### The lane-identification pipeline
 
-To meet specifications in the project, take a look at the requirements in the [project rubric](https://review.udacity.com/#!/rubrics/322/view)
-
-
-Creating a Great Writeup
----
-For this project, a great writeup should provide a detailed response to the "Reflection" section of the [project rubric](https://review.udacity.com/#!/rubrics/322/view). There are three parts to the reflection:
-
-1. Describe the pipeline
-
-2. Identify any shortcomings
-
-3. Suggest possible improvements
-
-We encourage using images in your writeup to demonstrate how your pipeline works.  
-
-All that said, please be concise!  We're not looking for you to write a book here: just a brief description.
-
-You're not required to use markdown for your writeup.  If you use another method please just submit a pdf of your writeup. Here is a link to a [writeup template file](https://github.com/udacity/CarND-LaneLines-P1/blob/master/writeup_template.md). 
+1. I first mark off a region of interest (ROI) which masks the parts of the images that we are not interested in. This is done by drawing a polygon that is roughly the outline of where the lane lines would be expected to be for the given camera position.
+2. It then converts the image to hue-saturation-value (HSV) color space. This is because it makes it a lot easier to identify certain hues of color, which is defined by one value instead of the combination of three in red-green-blue (RGB). For instance, white has a value of 0 (easy enough) and yellow is around 25. I then filter out pixels that are not within a range around these colors, leaving us with just the white and yellow lane lines.
+3. The image is then converted into grayscale, which is needed for Canny edge detection
+4. A Gaussian blur is added which aids in Canny edge detection
+5. Canny edge detection is performed, which leaves a 1 pixel line around sharp edges. This outlines the lane lines in the image.
+6. A Hough transform is applied, which calculates all the possible linear lines for each point in our edge-detected image, and then selects the lines that go through the most points, which follows our lane lines.
+7. The draw line function uses these Hough transform lines to make the final solid lines.
+    1. For each of these lines, we calculate the average x1, x2, y1, y2
+    2. If we're left of the centerpoint, we consider it the left line. If we're right of it, the right lines.
+    3. For each side, the slope is calculated, then used to extend the lane line up and down from the detected lane.
+    4. Draw the line.
 
 
-The Project
----
+### 2. Potential shortcomings
+* The most obvious shortcoming is that the current algorithm doesn't respond well to changes in conditions. Different lighting conditions, road types, etc. are not taken into account. 
+* The region of interest is not algorithmically set. One way of doing this would be horizon detection.
+* Similarly, sharp curves in the road would not work. The current algorithm only detects straight lines.
 
-## If you have already installed the [CarND Term1 Starter Kit](https://github.com/udacity/CarND-Term1-Starter-Kit/blob/master/README.md) you should be good to go!   If not, you should install the starter kit to get started on this project. ##
 
-**Step 1:** Set up the [CarND Term1 Starter Kit](https://classroom.udacity.com/nanodegrees/nd013/parts/fbf77062-5703-404e-b60c-95b78b2f3f9e/modules/83ec35ee-1e02-48a5-bdb7-d244bd47c2dc/lessons/8c82408b-a217-4d09-b81d-1bda4c6380ef/concepts/4f1870e0-3849-43e4-b670-12e6f2d4b7a7) if you haven't already.
-
-**Step 2:** Open the code in a Jupyter Notebook
-
-You will complete the project code in a Jupyter notebook.  If you are unfamiliar with Jupyter Notebooks, check out <A HREF="https://www.packtpub.com/books/content/basics-jupyter-notebook-and-python" target="_blank">Cyrille Rossant's Basics of Jupyter Notebook and Python</A> to get started.
-
-Jupyter is an Ipython notebook where you can run blocks of code and see results interactively.  All the code for this project is contained in a Jupyter notebook. To start Jupyter in your browser, use terminal to navigate to your project directory and then run the following command at the terminal prompt (be sure you've activated your Python 3 carnd-term1 environment as described in the [CarND Term1 Starter Kit](https://github.com/udacity/CarND-Term1-Starter-Kit/blob/master/README.md) installation instructions!):
-
-`> jupyter notebook`
-
-A browser window will appear showing the contents of the current directory.  Click on the file called "P1.ipynb".  Another browser window will appear displaying the notebook.  Follow the instructions in the notebook to complete the project.  
-
-**Step 3:** Complete the project and submit both the Ipython notebook and the project writeup
-
+### 3. Possible improvements 
+* The first improvement I would make would be to have no user-set constants, and to calculate everything based on the given image.
+* Another improvement would be to smooth out consecutive drawings and remove noise from measurements.
